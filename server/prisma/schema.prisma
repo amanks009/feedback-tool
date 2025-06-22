@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  Manager
+  Employee
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+model User {
+  id               Int        @id @default(autoincrement())
+  name             String
+  email            String     @unique
+  password         String
+  role             Role
+  manager          User?      @relation("ManagerEmployees", fields: [managerId], references: [id])
+  managerId        Int?
+  employees        User[]     @relation("ManagerEmployees")
+  feedbacks        Feedback[] @relation("EmployeeFeedbacks")
+  managerFeedbacks Feedback[] @relation("ManagerFeedbacks")
+}
+
+model Feedback {
+  id             Int      @id @default(autoincrement())
+  strengths      String
+  areasToImprove String
+  sentiment      Sentiment
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       User     @relation("EmployeeFeedbacks", fields: [employeeId], references: [id])
+  employeeId     Int
+  manager        User     @relation("ManagerFeedbacks", fields: [managerId], references: [id])
+  managerId      Int
+  acknowledged   Boolean  @default(false)
+}
