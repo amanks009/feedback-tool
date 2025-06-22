@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState } from "react";
 import api from "../utils/api";
-import { Paper, Title, Button, Loader } from "@mantine/core";
+import { Paper, Title, Button, Loader, Group, Text, Badge, Stack, Card, Avatar } from "@mantine/core";
 import { useAuth } from "../utils/auth";
+import { IconCheck, IconX, IconUser, IconCalendar, IconThumbUp, IconThumbDown, IconMoodNeutral } from "@tabler/icons-react";
 
 export default function EmployeeDashboard() {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -37,28 +38,112 @@ export default function EmployeeDashboard() {
   };
 
   if (loading) {
-    return <Loader size="xl" style={{ display: 'block', margin: 'auto' }} />;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Loader size="xl" variant="bars" />
+      </div>
+    );
   }
 
+  const getSentimentIcon = (sentiment: string) => {
+    switch (sentiment) {
+      case 'POSITIVE':
+        return <IconThumbUp size={18} />;
+      case 'NEGATIVE':
+        return <IconThumbDown size={18} />;
+      default:
+        return <IconMoodNeutral size={18} />;
+    }
+  };
+
+  const getSentimentColor = (sentiment: string) => {
+    switch (sentiment) {
+      case 'POSITIVE':
+        return 'green';
+      case 'NEGATIVE':
+        return 'red';
+      default:
+        return 'yellow';
+    }
+  };
+
   return (
-    <div style={{ maxWidth: 700, margin: "auto" }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title order={2} mb="md">Feedback Timeline</Title>
-        <Button variant="outline" onClick={logout}>Logout</Button>
-      </div>
-      {timeline.map(fb => (
-        <Paper key={fb.id} p="md" mb="sm" withBorder>
-          <b>{fb.sentiment}</b> | <i>{new Date(fb.createdAt).toLocaleString()}</i>
-          <br />
-          <b>Strengths:</b> {fb.strengths}
-          <br />
-          <b>Areas to Improve:</b> {fb.areasToImprove}
-          <br />
-          <b>Acknowledged:</b> {fb.acknowledged ? "Yes" : (
-            <Button size="xs" onClick={() => acknowledge(fb.id)}>Acknowledge</Button>
-          )}
-        </Paper>
-      ))}
+    <div style={{ maxWidth: 800, margin: "auto", padding: '1rem' }}>
+      <Group justify="space-between" mb="xl">
+        <Title order={2}>Your Feedback Timeline</Title>
+        <Button 
+          variant="outline" 
+          onClick={logout}
+          leftSection={<IconX size={16} />}
+        >
+          Logout
+        </Button>
+      </Group>
+
+      <Stack gap="md">
+        {timeline.length === 0 ? (
+          <Card shadow="sm" p="lg" radius="md" withBorder>
+            <Text ta="center" c="dimmed">No feedback received yet</Text>
+          </Card>
+        ) : (
+          timeline.map(fb => (
+            <Card key={fb.id} shadow="sm" p="lg" radius="md" withBorder>
+              <Group justify="space-between" mb="xs">
+                <Group gap="xs">
+                  <Avatar color={getSentimentColor(fb.sentiment)} radius="xl">
+                    {getSentimentIcon(fb.sentiment)}
+                  </Avatar>
+                  <Badge 
+                    color={getSentimentColor(fb.sentiment)}
+                    variant="filled"
+                    size="lg"
+                  >
+                    {fb.sentiment}
+                  </Badge>
+                </Group>
+                <Group gap="xs">
+                  <IconCalendar size={16} />
+                  <Text size="sm" c="dimmed">
+                    {new Date(fb.createdAt).toLocaleDateString()}
+                  </Text>
+                </Group>
+              </Group>
+
+              <Stack gap="xs" mt="md">
+                <div>
+                  <Text fw={600}>Strengths:</Text>
+                  <Text>{fb.strengths}</Text>
+                </div>
+                <div>
+                  <Text fw={600}>Areas to Improve:</Text>
+                  <Text>{fb.areasToImprove}</Text>
+                </div>
+              </Stack>
+
+              <Group justify="flex-end" mt="md">
+                {fb.acknowledged ? (
+                  <Badge 
+                    color="teal" 
+                    leftSection={<IconCheck size={14} />}
+                    variant="outline"
+                  >
+                    Acknowledged
+                  </Badge>
+                ) : (
+                  <Button 
+                    size="compact-md"
+                    variant="light"
+                    onClick={() => acknowledge(fb.id)}
+                    leftSection={<IconCheck size={16} />}
+                  >
+                    Acknowledge
+                  </Button>
+                )}
+              </Group>
+            </Card>
+          ))
+        )}
+      </Stack>
     </div>
   );
 }

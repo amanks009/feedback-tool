@@ -2,7 +2,21 @@
 import { useState } from "react";
 import { useAuth } from "../utils/auth";
 import { useRouter } from "next/navigation";
-import { TextInput, PasswordInput, Button, Paper, Title, Text, Select, NumberInput } from "@mantine/core";
+import { 
+  TextInput, 
+  PasswordInput, 
+  Button, 
+  Paper, 
+  Title, 
+  Text, 
+  Select, 
+  NumberInput,
+  Stack,
+  Box,
+  Alert,
+  rem
+} from "@mantine/core";
+import { IconAlertCircle, IconUser, IconMail, IconLock, IconShield } from "@tabler/icons-react";
 
 interface RegisterData {
   name: string;
@@ -21,7 +35,8 @@ export default function RegisterForm() {
     role: "Employee",
     manager_id: undefined,
   });
-  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleChange = (field: keyof RegisterData, value: any) => {
@@ -30,7 +45,8 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErr("");
+    setError("");
+    setLoading(true);
     
     try {
       const data: Omit<RegisterData, "manager_id"> & { manager_id?: number } = {
@@ -42,72 +58,125 @@ export default function RegisterForm() {
       
       if (form.role === "Employee") {
         if (!form.manager_id) {
-          setErr("Manager ID is required for employees.");
+          setError("Manager ID is required for employees");
+          setLoading(false);
           return;
         }
         data.manager_id = form.manager_id;
       }
-      console.log("getting here")
+
       await register(data);
- 
       router.push("/login");
     } catch (err) {
       console.error("Registration error:", err);
-      setErr("Registration failed. Please check your details and try again.");
+      setError(err instanceof Error ? err.message : "Registration failed. Please check your details and try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Paper maw={400} mx="auto" p="md" withBorder>
-      <Title order={2} mb="md">Register</Title>
-      {err && <Text c="red" mb="sm">{err}</Text>}
-      <form onSubmit={handleSubmit}>
-        <TextInput
-          label="Name"
-          value={form.name}
-          required
-          onChange={(e) => handleChange("name", e.target.value)}
-          mb="sm"
-        />
-        <TextInput
-          label="Email"
-          type="email"
-          value={form.email}
-          required
-          onChange={(e) => handleChange("email", e.target.value)}
-          mb="sm"
-        />
-        <PasswordInput
-          label="Password"
-          value={form.password}
-          required
-          onChange={(e) => handleChange("password", e.target.value)}
-          mb="sm"
-        />
-        <Select
-          label="Role"
-          data={[
-            { value: "Employee", label: "Employee" },
-            { value: "Manager", label: "Manager" },
-          ]}
-          value={form.role}
-          onChange={(value) => handleChange("role", value as "Manager" | "Employee")}
-          mb="sm"
-        />
-        {form.role === "Employee" && (
-          <NumberInput
-            label="Manager ID"
-            value={form.manager_id || ""}
-            onChange={(value) => handleChange("manager_id", Number(value))}
-            mb="sm"
-            required
-            min={1}
-          />
+    <Box maw={460} mx="auto" py="xl">
+      <Title order={2} ta="center" mb="lg">
+        Create an Account
+      </Title>
+      
+      <Paper withBorder shadow="sm" p="xl" radius="md">
+        {error && (
+          <Alert 
+            icon={<IconAlertCircle size={rem(18)} />} 
+            title="Error" 
+            color="red" 
+            mb="xl"
+            variant="light"
+          >
+            {error}
+          </Alert>
         )}
-        <Button type="submit" fullWidth mt="md">
-          Register
-        </Button>
-      </form>
-    </Paper>
+
+        <form onSubmit={handleSubmit}>
+          <Stack gap="md">
+            <TextInput
+              label="Full Name"
+              placeholder="Your name"
+              value={form.name}
+              required
+              onChange={(e) => handleChange("name", e.target.value)}
+              leftSection={<IconUser size={rem(16)} />}
+              radius="md"
+            />
+
+            <TextInput
+              label="Email"
+              placeholder="your@email.com"
+              type="email"
+              value={form.email}
+              required
+              onChange={(e) => handleChange("email", e.target.value)}
+              leftSection={<IconMail size={rem(16)} />}
+              radius="md"
+            />
+
+            <PasswordInput
+              label="Password"
+              placeholder="Your password"
+              value={form.password}
+              required
+              onChange={(e) => handleChange("password", e.target.value)}
+              leftSection={<IconLock size={rem(16)} />}
+              radius="md"
+            />
+
+            <Select
+              label="Role"
+              placeholder="Select your role"
+              data={[
+                { value: "Employee", label: "Employee" },
+                { value: "Manager", label: "Manager" },
+              ]}
+              value={form.role}
+              onChange={(value) => handleChange("role", value as "Manager" | "Employee")}
+              leftSection={<IconShield size={rem(16)} />}
+              radius="md"
+            />
+
+            {form.role === "Employee" && (
+              <NumberInput
+                label="Manager ID"
+                placeholder="Enter your manager's ID"
+                value={form.manager_id || ""}
+                onChange={(value) => handleChange("manager_id", Number(value))}
+                required
+                min={1}
+                radius="md"
+              />
+            )}
+
+            <Button 
+              type="submit" 
+              fullWidth 
+              mt="md" 
+              loading={loading}
+              radius="md"
+              size="md"
+            >
+              Register
+            </Button>
+
+            <Text c="dimmed" size="sm" ta="center" mt="sm">
+              Already have an account?{' '}
+              <Text 
+                component="a" 
+                href="/login" 
+                c="blue" 
+                style={{ cursor: 'pointer' }}
+              >
+                Log in
+              </Text>
+            </Text>
+          </Stack>
+        </form>
+      </Paper>
+    </Box>
   );
 }
